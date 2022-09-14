@@ -7,10 +7,16 @@ class Policy:
     def execute(self) -> int:
         pass
 
+    def get_name(self) -> str:
+        pass
+
 class Greedy(Policy):
     def execute(self, acc_reward_arms) -> int:
         a = np.argmax(acc_reward_arms)
         return a
+    
+    def get_name(self) -> str:
+        return 'Greedy'
 
 class EGreedy(Policy):
     def __init__(self, epsilon = 0.1) -> None:
@@ -24,6 +30,9 @@ class EGreedy(Policy):
         else:
             a = np.argmax(acc_reward_arms)
         return a
+
+    def get_name(self) -> str:
+        return 'EGreedy'
 
 class UCB(Policy):
     def __init__(self, confidence = 2) -> None:
@@ -39,3 +48,6 @@ class UCB(Policy):
                 At.append(x + np.iinfo(np.int32).max)
         a = np.argmax(np.array(At))
         return a
+    
+    def get_name(self) -> str:
+        return 'Upper Confidence Bounds'
