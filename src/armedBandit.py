@@ -1,6 +1,6 @@
 import numpy as np
 
-from policy import *
+from src.policy import *
 
 class ArmedBandit:
     def __init__(self, n, t, init, policy) -> None:
