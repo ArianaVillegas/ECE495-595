@@ -1,8 +1,11 @@
 import numpy as np
 
-class Policy:
-    def __init__(self) -> None:
-        pass
+class PolicyEval:
+    def __init__(self, actions, action_prob, env, gamma=0.9) -> None:
+        self.actions = actions
+        self.action_prob = action_prob
+        self.env = env
+        self.gamma = gamma
 
     def execute(self) -> int:
         pass
@@ -10,44 +13,32 @@ class Policy:
     def get_name(self) -> str:
         pass
 
-class Greedy(Policy):
-    def execute(self, acc_reward_arms) -> int:
-        a = np.argmax(acc_reward_arms)
-        return a
-    
-    def get_name(self) -> str:
-        return 'Greedy'
+class Bellman(PolicyEval):
+    def __init__(self, actions, action_prob, env, gamma=0.9) -> None:
+        super().__init__(actions, action_prob, env, gamma)
 
-class EGreedy(Policy):
-    def __init__(self, epsilon = 0.1) -> None:
-        super().__init__()
-        self.epsilon = epsilon
+    def execute(self, value, i, j) -> float:
+        cur_value = 0
+        for action in self.actions:
+            [(next_i, next_j), reward] = self.env.step([i, j], action)
+            cur_value += self.action_prob * (reward + self.gamma * value[next_i, next_j])
 
-    def execute(self, i, arms, acc_reward_arms) -> int:
-        rd = np.random.rand()
-        if i == 0 or rd < self.epsilon:
-            a = np.random.choice(arms)
-        else:
-            a = np.argmax(acc_reward_arms)
-        return a
+        return cur_value
 
     def get_name(self) -> str:
-        return 'EGreedy'
+        return 'Bellman'
 
-class UCB(Policy):
-    def __init__(self, confidence = 2) -> None:
-        super().__init__()
-        self.confidence = confidence
-    
-    def execute(self, i, acc_reward_arms, acc_steps) -> int:
-        At = []
-        for x, y in zip(acc_reward_arms, acc_steps):
-            if i and y:
-                At.append(x + self.confidence*np.sqrt(np.log(i) / y))
-            else:
-                At.append(x + np.iinfo(np.int32).max)
-        a = np.argmax(np.array(At))
-        return a
-    
+class OptimalBellman(PolicyEval):
+    def __init__(self, actions, action_prob, env, gamma=0.9) -> None:
+        super().__init__(actions, action_prob, env, gamma)
+
+    def execute(self, value, i, j) -> float:
+        cur_value = []
+        for action in self.actions:
+            [(next_i, next_j), reward] = self.env.step([i, j], action)
+            cur_value.append(reward + self.gamma * value[next_i, next_j])
+
+        return np.max(cur_value)
+
     def get_name(self) -> str:
-        return 'Upper Confidence Bounds'
+        return 'Optimal Bellman'

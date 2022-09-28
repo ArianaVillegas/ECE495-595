@@ -1,62 +1,111 @@
 import matplotlib.pyplot as plt
+from matplotlib.table import Table
 import numpy as np
+from numpy.linalg import inv
 
-from src.armedBandit import *
 from src.policy import *
 
 class Tester:
-    def __init__(self, n, t, init=0, mu=0) -> None:
-        self.n = n
-        self.t = t
-        self.init = init
-        self.mu = mu
+    def __init__(self, world_size, actions, actions_prob, action_figs, env) -> None:
+        self.world_size = world_size
+        self.actions = actions
+        self.actions_prob = actions_prob
+        self.action_figs = action_figs
+        self.env = env
 
-    def set_n(self, n) -> None:
-        self.n = n
+    def set_world_size(self, world_size) -> None:
+        self.world_size = world_size
 
-    def set_t(self, t) -> None:
-        self.t = t
+    def set_actions(self, actions) -> None:
+        self.actions = actions
 
-    def set_init(self, init) -> None:
-        self.init = init
+    def set_actions_prob(self, actions_prob) -> None:
+        self.actions_prob = actions_prob
 
-    def set_mu(self, mu) -> None:
-        self.mu = mu
+    def _draw_table(self, ax, image):
+        ax.set_axis_off()
+        tb = Table(ax, bbox=[0, 0, 1, 1])
 
-    def _get_bandit(self, Bandit, Policy, scenario):
-        if issubclass(Bandit, GradientArmedBandit) and Bandit != ArmedBandit:
-            bandit = Bandit(self.n, self.t, self.init, scenario[0], mu=self.mu, baseline=scenario[1])
-            # scenario[1] = 'baseline' if scenario[1] else 'no baseline'
-            return None, bandit
+        nrows, ncols = image.shape
+        width, height = 1.0 / ncols, 1.0 / nrows
+        
+        # Add cells
+        for (i, j), val in np.ndenumerate(image):
+            tb.add_cell(i, j, width, height, text=val,
+                        loc='center', facecolor='white')
+
+        for i in range(len(image)):
+            tb.add_cell(i, -1, width, height, text=i + 1, loc='right',
+                        edgecolor='none', facecolor='none')
+            tb.add_cell(-1, i, width, height / 2, text=i + 1, loc='center',
+                        edgecolor='none', facecolor='none')
+
+        ax.add_table(tb)
+
+        return ax
+
+    
+    def _iterative_test(self, policy, limit= 1e-4):
+        value = np.zeros((self.world_size, self.world_size))
+        while True:
+            # keep iteration until convergence
+            new_value = np.zeros((self.world_size, self.world_size))
+            for i in range(self.world_size):
+                for j in range(self.world_size):
+                    new_value[i][j] = policy.execute(value, i, j)
+
+            if np.sum(np.abs(value - new_value)) < limit:
+                break
+            else:
+                value = new_value
+        return new_value
+
+    
+    def _equation_test(self, gamma):
+        I = np.identity(self.world_size)
+        R = np.zeros((self.world_size, self.world_size))
+        for i in range(self.world_size):
+            for j in range(self.world_size):
+                [_, R[i][j]] = self.env.step([i, j], self.actions[np.random.choice(4)])
+        p = np.zeros((self.world_size, self.world_size))
+        p.fill(self.actions_prob)
+
+        value = np.multiply(gamma, p)
+        value = inv(I - value)
+        value = np.multiply(value, R)
+        return value
+
+
+    def _gen_labels(self, optimal):
+        labels = [[None for _ in range(self.world_size)] for _ in range(self.world_size)]
+        for (i, j), _ in np.ndenumerate(optimal):
+            next_vals = []
+            for action in self.actions:
+                next_state, _ = self.env.step([i, j], action)
+                next_vals.append(optimal[next_state[0], next_state[1]])
+            labels[i][j] = np.where(next_vals == np.max(next_vals))[0]
+
+        return labels
+
+
+    def test_grid_world(self, iterative=False, Policy=OptimalBellman, gamma=1) -> None:
+        if iterative:
+            policy = Policy(self.actions, self.actions_prob, self.env, gamma)
+            value = self._iterative_test(policy)
         else:
-            policy = Policy(scenario)
-            bandit = Bandit(self.n, self.t, self.init, policy, mu=self.mu)
-            return policy, bandit
+            value = self._equation_test(gamma)
+        labels = self._gen_labels(value)
+        for (i, j), val in np.ndenumerate(labels):
+            labels[i][j] = ''.join([self.action_figs[v] for v in val])
 
-
-    def testBandit(self, Bandit, Policy, scenarios, steps=1000) -> None:
         plt.clf()
         fig, (ax1, ax2) = plt.subplots(1, 2)
-        fig.set_size_inches(10.5, 5.5)
-        
-        for scenario in scenarios:
-            r = np.zeros(self.t)
-            p = np.zeros(self.t)
-            for step in range(steps):
-                policy, bandit = self._get_bandit(Bandit, Policy, scenario)
-                bandit.simulate()
-                r += (bandit.get_reward_steps() - r) / (step+1)
-                p += (bandit.get_best_fraction() - p) / (step+1)
-            
-            ax1.plot(range(self.t), r, label=[scenario[0], 'baseline' if scenario[1] else 'no baseline'] if isinstance(scenario, list) else scenario)
-            ax2.plot(range(self.t), p, label=[scenario[0], 'baseline' if scenario[1] else 'no baseline'] if isinstance(scenario, list) else scenario)
+        fig.set_size_inches(10, 5.5)
+        ax1 = self._draw_table(ax1, np.round(value, decimals=1))
+        ax2 = self._draw_table(ax2, np.array(labels))
+        if iterative:
+            fig.suptitle(f'Env: {self.env.get_name()}\n Policy: {policy.get_name()}')
+        else:
+            fig.suptitle(f'Env: {self.env.get_name()}')
 
-        ax1.legend()
-        ax1.set(xlabel='Iteration', ylabel='Average Reward')
-
-        ax2.legend()
-        ax2.set(xlabel='Iteration', ylabel='Fraction of optimal action')
-
-        title = bandit.get_name() + (' and {} Policy'.format(policy.get_name()) if Policy else '') + ' and Init {}'.format(self.init)
-        fig.suptitle(title)
         fig.tight_layout()
