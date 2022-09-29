@@ -62,17 +62,21 @@ class Tester:
 
     
     def _equation_test(self, gamma):
-        I = np.identity(self.world_size)
-        R = np.zeros((self.world_size, self.world_size))
+        n = self.world_size * self.world_size
+        I = np.identity(n)
+        R = np.zeros((n, 1))
+        P = np.zeros((n, n))
         for i in range(self.world_size):
             for j in range(self.world_size):
-                [_, R[i][j]] = self.env.step([i, j], self.actions[np.random.choice(4)])
-        p = np.zeros((self.world_size, self.world_size))
-        p.fill(self.actions_prob)
+                for action in self.actions:
+                    [[nx, ny], r_a] = self.env.step([i, j], action)
+                    R[i*self.world_size+j] += r_a * self.actions_prob
+                    P[i*self.world_size+j][nx*self.world_size+ny] += self.actions_prob
 
-        value = np.multiply(gamma, p)
+        value = np.multiply(gamma, P)
         value = inv(I - value)
-        value = np.multiply(value, R)
+        value = np.dot(value, R)
+        value = np.reshape(value, (self.world_size, self.world_size))
         return value
 
 
