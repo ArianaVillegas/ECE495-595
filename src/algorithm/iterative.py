@@ -17,7 +17,7 @@ class Iterative(Algorithm):
     def _value_state(self, i) -> np.ndarray:
         pass
 
-    def policy(self, limit=1e-4) -> np.ndarray:
+    def policy(self) -> np.ndarray:
         labels = {}
         for i in self.states:
             next_vals = self._value_state(i)
@@ -47,7 +47,7 @@ class ValueIteration(Iterative):
     def execute(self) -> np.ndarray:
         while True:
             delta = 0.0
-            for i in self.states[1:-1]:
+            for i in self.states:
                 next_vals = self._value_state(i)
                 new_value = np.max(next_vals)
                 delta = max(delta, np.abs(self.value[i] - new_value))

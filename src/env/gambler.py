@@ -13,7 +13,10 @@ class Gambler(Env):
         return 'Gambler Problem'
 
     def get_actions(self, state) -> np.ndarray:
-        return np.array(range(min(state, self.goal - state) + 1))
+        # No terminal
+        if state%self.goal:
+            return np.array(range(1, min(state, self.goal - state) + 1))
+        return np.array([0])
 
     def get_states(self) -> np.ndarray:
         return self.states[1:-1]
@@ -23,10 +26,11 @@ class Gambler(Env):
         next_state = [state, state]
         reward = [0, 0]
 
-        if state%100:
+        # No terminal
+        if state%self.goal:
             for i, c in enumerate([-1,1]):
                 next_state[i] = state + c*action
-                if next_state[i] == 100:
+                if next_state[i] == self.goal:
                     reward[i] = 1
 
         return [next_state, reward, [], coin]
@@ -43,11 +47,9 @@ class Gambler(Env):
         y_unique = []
         y = []
         for key in policy_map:
-            opt = list(set(policy_map[key]))
+            opt = self.get_actions(key)[list(set(policy_map[key]))]
             [x_unique.append(key) for _ in opt]
             [y.append(o) for o in opt]
-            # if len(opt) > 1 and 0 in opt:
-            #     opt.remove(0)
             if min_val:
                 y_unique.append(min(opt))
             else:
