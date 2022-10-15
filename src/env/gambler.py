@@ -1,3 +1,4 @@
+from xmlrpc.client import Boolean
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,6 +22,12 @@ class Gambler(Env):
     def get_states(self) -> np.ndarray:
         return self.states[1:-1]
 
+    def set_reward(self, reward) -> np.ndarray:
+        self.reward = reward
+
+    def is_done(self, state) -> bool:
+        return (state%self.goal == 0)
+
     def step(self, state, action) -> list:
         coin = [1-self.prob_h, self.prob_h]
         next_state = [state, state]
@@ -30,15 +37,14 @@ class Gambler(Env):
         if state%self.goal:
             for i, c in enumerate([-1,1]):
                 next_state[i] = state + c*action
-                if next_state[i] == self.goal:
-                    reward[i] = 1
+                reward[i] = self.reward[state + c*action]
 
         return [next_state, reward, [], coin]
 
     def plot_value(self, ax, value) -> None:
         ax.set_xticks([1,25, 50, 75, 99])
-        ax.axis(ymin=0,ymax=1.05)
-        ax.plot(self.states[:-1], value[:-1])
+        ax.axis(ymin=np.floor(min(value))-0.05,ymax=np.ceil(max(value))+0.05)
+        ax.plot(self.states[1:-1], value[1:-1])
         ax.set_xlabel('Capital')
         ax.set_ylabel('Value estimates')
 

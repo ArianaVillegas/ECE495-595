@@ -22,8 +22,7 @@ class Tester:
         return labels
 
 
-    def test(self, Algorithm, gamma=1) -> None:
-        algo = Algorithm(self.env, gamma)
+    def test(self, algo) -> None:
         value = algo.execute()
         labels = algo.policy()
 

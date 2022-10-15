@@ -4,6 +4,7 @@ class Env:
     def __init__(self) -> None:
         self.actions = np.array([])
         self.states = np.array([])
+        self.reward = np.array([])
 
     def get_name(self) -> str:
         pass
@@ -19,6 +20,9 @@ class Env:
 
     def get_states_len(self) -> np.ndarray:
         return self.states.shape[0]
+
+    def is_done(self, state) -> bool:
+        return False
 
     def step(self) -> list:
         pass
