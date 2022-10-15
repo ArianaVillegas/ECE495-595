@@ -1,6 +1,6 @@
 import numpy as np
 
-from .base import Algorithm
+from src.algorithm.base import Algorithm
 
 
 class Iterative(Algorithm):
