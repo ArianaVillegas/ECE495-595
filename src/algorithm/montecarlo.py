@@ -54,8 +54,9 @@ class FVMonteCarlo(MonteCarlo):
     def execute(self, n_episodes=1) -> np.ndarray:
         for _ in range(n_episodes):
             states, actions, rewards = self.get_episode()
-            for state, action in zip(states, actions):
-                pass
+            cur_reward = 0
+            for state, action, reward in zip(states, actions, rewards):
+                cur_reward += reward
 
     def name(self) -> str:
         return 'First Visit Monte Carlo'
