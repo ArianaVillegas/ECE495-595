@@ -16,7 +16,7 @@ class Policy:
         return max_idx
 
     def get_value(self, q) -> float:
-        return np.sum(q)
+        return np.max(q)
 
     def name(self) -> str:
         return 'Policy'

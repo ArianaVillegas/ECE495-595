@@ -45,6 +45,7 @@ class MonteCarlo(Iterative):
         final_policy = Policy()
         for state in self.states:
             state_idx = np.where(self.env.states == state)[0][0]
+            # print(self.q[state_idx])
             labels[state] = final_policy.get_max(self.q[state_idx])
         return labels
 
@@ -60,7 +61,6 @@ class FVMonteCarlo(MonteCarlo):
         for _ in range(n_episodes):
             states, actions, rewards = self.get_episode()
             reward = 0
-            # print(states)
             for i in range(len(states))[::-1]:
                 state = states[i] 
                 action = actions[i]
@@ -71,10 +71,10 @@ class FVMonteCarlo(MonteCarlo):
                 action_idx = np.where(self.env.get_actions(state) == action)[0][0]
                 self.qcnt[state_idx][action_idx] += 1
                 self.q[state_idx][action_idx] += (reward - self.q[state_idx][action_idx])/self.qcnt[state_idx][action_idx]
-            # [print(qi) for qi in self.q]
 
+        final_policy = Policy()
         for i in range(self.env.get_states_len()):
-            self.value[i] = self._policy.get_value(self.q[i])
+            self.value[i] = final_policy.get_value(self.q[i])
         
         # [print(qi) for qi in self.q]
         
