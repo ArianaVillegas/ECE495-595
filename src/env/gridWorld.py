@@ -47,7 +47,16 @@ class GridWorld(Env):
             else:
                 reward = 0
         
-        return [[self._get_state(next_state)], [reward], [self.action_prob], [1]]
+        if state == [7, 3]:
+            done = True
+        else:
+            done = False
+        
+        return self._get_state(next_state), reward, done
+
+    
+    def reset(self):
+        return self._get_state([0, 3]), False
 
 
     def _draw_table(self, ax, image):
