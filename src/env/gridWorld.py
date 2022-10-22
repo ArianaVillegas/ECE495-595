@@ -11,27 +11,31 @@ ACTIONS = np.array([[0, -1],
                     [1, 0]])
 ACTIONS_FIGS = ['←', '↑', '→', '↓']
 
+#column wind from example 6.5 fig 6.10
+WIND = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
 
-class GridWorld(Env):
+
+class Windy_GridWorld(Env):
     def __init__(self, world_size, a_pos, a_prime_pos, b_pos, b_prime_pos, action_prob) -> None:
-        self.world_size = world_size
+        self.world_size = [world_size[0], world_size[1]]
         self.a_pos = a_pos
         self.a_prime_pos = a_prime_pos
         self.b_pos = b_pos
         self.b_prime_pos = b_prime_pos
         self.action_prob = action_prob
         self.actions = ACTIONS
-        self.states = np.array(range(world_size * world_size))
+        self.states = np.array(range(world_size[0] * world_size[1]))
+        self.wind = WIND
 
     def get_name(self) -> str:
-        return 'Grid World'
+        return 'Windy Grid World'
 
     def _get_state(self, state):
         x, y = state
-        return x * self.world_size + y
+        return x * self.world_size[0] + y * self.world_size[1]
 
-    def step(self, state, action) -> list:
-        state = [state//self.world_size, state%self.world_size]
+    def windy_step(self, state, action) -> list:
+        state = [state//self.world_size[0], state%self.world_size[1]] 
         if state == self.a_pos:
             reward = 10
             next_state = self.a_prime_pos
@@ -39,7 +43,7 @@ class GridWorld(Env):
             reward = 5
             next_state = self.b_prime_pos
         else:
-            next_state = (np.array(state) + action).tolist()
+            next_state = (np.array(state) + action + WIND[state[0]]).tolist() #add wind here indexed by x
             x, y = next_state
             if x < 0 or x >= self.world_size or y < 0 or y >= self.world_size:
                 reward = -1.0
@@ -54,7 +58,6 @@ class GridWorld(Env):
         
         return self._get_state(next_state), reward, done
 
-    
     def reset(self):
         return self._get_state([0, 3]), False
 
@@ -78,6 +81,7 @@ class GridWorld(Env):
                         edgecolor='none', facecolor='none')
 
         ax.add_table(tb)
+        ax.get_xticklabels(str(WIND))
         return ax
 
     def plot_value(self, ax, value) -> None:
