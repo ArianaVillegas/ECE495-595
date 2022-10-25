@@ -15,14 +15,11 @@ ACTIONS_FIGS = ['←', '↑', '→', '↓']
 WIND = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
 
 
-class Windy_GridWorld(Env):
-    def __init__(self, world_size, a_pos, a_prime_pos, b_pos, b_prime_pos, action_prob) -> None:
-        self.world_size = [world_size[0], world_size[1]]
-        self.a_pos = a_pos
-        self.a_prime_pos = a_prime_pos
-        self.b_pos = b_pos
-        self.b_prime_pos = b_prime_pos
-        self.action_prob = action_prob
+class WindyGridWorld(Env):
+    def __init__(self, world_size, start_pos, end_pos) -> None:
+        self.world_size = world_size
+        self.start_pos = start_pos
+        self.end_pos = end_pos
         self.actions = ACTIONS
         self.states = np.array(range(world_size[0] * world_size[1]))
         self.wind = WIND
@@ -32,34 +29,32 @@ class Windy_GridWorld(Env):
 
     def _get_state(self, state):
         x, y = state
-        return x * self.world_size[0] + y * self.world_size[1]
+        return x * self.world_size[0] + y
 
-    def windy_step(self, state, action) -> list:
-        state = [state//self.world_size[0], state%self.world_size[1]] 
-        if state == self.a_pos:
-            reward = 10
-            next_state = self.a_prime_pos
-        elif state == self.b_pos:
-            reward = 5
-            next_state = self.b_prime_pos
-        else:
-            next_state = (np.array(state) + action + WIND[state[0]]).tolist() #add wind here indexed by x
-            x, y = next_state
-            if x < 0 or x >= self.world_size or y < 0 or y >= self.world_size:
-                reward = -1.0
-                next_state = state
-            else:
-                reward = 0
+    def get_action_idx(self, state, action) -> int:
+        for i, cur_action in enumerate(self.get_actions(state)):
+            if all(cur_action == action):
+                return i
+
+    def step(self, state, action) -> list:
+        state = [state//self.world_size[0], state%self.world_size[0]] 
         
-        if state == [7, 3]:
+        next_state = (np.array(state) + action - [WIND[state[1]], 0]).tolist() #add wind here indexed by x
+        x, y = next_state
+        if x < 0 or x >= self.world_size[1] or y < 0 or y >= self.world_size[0]:
+            next_state = state
+        
+        if state == self.end_pos:
             done = True
+            reward = 0.0
         else:
             done = False
+            reward = -1.0
         
         return self._get_state(next_state), reward, done
 
     def reset(self):
-        return self._get_state([0, 3]), False
+        return self._get_state(self.start_pos), False
 
 
     def _draw_table(self, ax, image):
@@ -85,11 +80,11 @@ class Windy_GridWorld(Env):
         return ax
 
     def plot_value(self, ax, value) -> None:
-        value = np.reshape(value, (self.world_size, self.world_size))
+        value = np.reshape(value, self.world_size[::-1])
         ax = self._draw_table(ax, np.round(value, decimals=1))
 
     def plot_policy(self, ax, policy_map) -> None:
         labels = []
         for key in policy_map:
             labels.append(''.join([ACTIONS_FIGS[v] for v in policy_map[key]]))
-        ax = self._draw_table(ax, np.reshape(np.array(labels), (self.world_size, self.world_size)))
+        ax = self._draw_table(ax, np.reshape(np.array(labels), self.world_size[::-1]))

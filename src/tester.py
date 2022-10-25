@@ -24,7 +24,7 @@ class Tester:
 
     def test(self, algo) -> None:
         value = algo.execute()
-        labels = algo.policy()
+        labels = algo.plot_policy()
 
         plt.clf()
         fig, (ax1, ax2) = plt.subplots(1, 2)

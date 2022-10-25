@@ -15,11 +15,21 @@ class Env:
     def get_actions_len(self, state) -> np.ndarray:
         return self.get_actions(state).shape[0]
 
+    def get_action_idx(self, state, action) -> int:
+        for i, cur_action in enumerate(self.get_actions(state)):
+            if cur_action == action:
+                return i
+
     def get_states(self) -> np.ndarray:
         return self.states
 
     def get_states_len(self) -> np.ndarray:
         return self.states.shape[0]
+
+    def get_state_idx(self, state) -> int:
+        for i, cur_state in enumerate(self.get_states()):
+            if cur_state == state:
+                return i
 
     def is_done(self, state) -> bool:
         return False

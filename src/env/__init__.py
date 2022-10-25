@@ -1,2 +1,2 @@
 import imp
-from .gridWorld import GridWorld
+from .gridWorld import WindyGridWorld 
