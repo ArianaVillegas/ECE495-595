@@ -18,7 +18,6 @@ class Tester:
                 next_state, _, _ = self.env.step(i, action)
                 next_vals.append(optimal[next_state])
             labels[i] = np.where(next_vals == np.max(next_vals))[0]
-
         return labels
 
 
@@ -28,7 +27,7 @@ class Tester:
 
         plt.clf()
         fig, (ax1, ax2) = plt.subplots(1, 2)
-        fig.set_size_inches(10, 5.5)
+        fig.set_size_inches(11, 5.5)
         self.env.plot_value(ax1, value)
         self.env.plot_policy(ax2, labels)
         fig.suptitle(f'Env: {self.env.get_name()} \n Algorithm: {algo.get_name()}')

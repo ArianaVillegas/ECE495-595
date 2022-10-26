@@ -29,7 +29,7 @@ class WindyGridWorld(Env):
 
     def _get_state(self, state):
         x, y = state
-        return x * self.world_size[0] + y
+        return x * self.world_size[0] + y 
 
     def get_action_idx(self, state, action) -> int:
         for i, cur_action in enumerate(self.get_actions(state)):
@@ -38,7 +38,8 @@ class WindyGridWorld(Env):
 
     def step(self, state, action) -> list:
         state = [state//self.world_size[0], state%self.world_size[0]] 
-        
+        # print(state[1])
+        #TODO:
         next_state = (np.array(state) + action - [WIND[state[1]], 0]).tolist() #add wind here indexed by x
         x, y = next_state
         if x < 0 or x >= self.world_size[1] or y < 0 or y >= self.world_size[0]:
@@ -69,22 +70,23 @@ class WindyGridWorld(Env):
             tb.add_cell(i, j, width, height, text=val,
                         loc='center', facecolor='white')
 
-        for i in range(len(image)):
+        for (i,j), val in np.ndenumerate(image):
             tb.add_cell(i, -1, width, height, text=i + 1, loc='right',
                         edgecolor='none', facecolor='none')
-            tb.add_cell(-1, i, width, height / 2, text=i + 1, loc='center',
+            tb.add_cell(-1, j, width, height / 2, text=j + 1, loc='center',
                         edgecolor='none', facecolor='none')
 
         ax.add_table(tb)
-        ax.get_xticklabels(str(WIND))
+        ax.set_xticks(WIND)
+        
         return ax
 
     def plot_value(self, ax, value) -> None:
-        value = np.reshape(value, self.world_size[::-1])
+        value = np.reshape(value, (self.world_size[1], self.world_size[0]))
         ax = self._draw_table(ax, np.round(value, decimals=1))
 
     def plot_policy(self, ax, policy_map) -> None:
         labels = []
         for key in policy_map:
             labels.append(''.join([ACTIONS_FIGS[v] for v in policy_map[key]]))
-        ax = self._draw_table(ax, np.reshape(np.array(labels), self.world_size[::-1]))
+        ax = self._draw_table(ax, np.reshape(np.array(labels), (self.world_size[1], self.world_size[0])))
