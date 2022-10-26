@@ -9,11 +9,11 @@ class Env:
     def get_name(self) -> str:
         pass
 
-    def get_actions(self, state) -> np.ndarray:
+    def get_actions(self, state_idx) -> np.ndarray:
         return self.actions
 
-    def get_actions_len(self, state) -> np.ndarray:
-        return self.get_actions(state).shape[0]
+    def get_actions_len(self, state_idx) -> np.ndarray:
+        return self.get_actions(state_idx).shape[0]
 
     def get_action_idx(self, state, action) -> int:
         for i, cur_action in enumerate(self.get_actions(state)):
