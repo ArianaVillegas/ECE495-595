@@ -38,20 +38,22 @@ num_actions = action_tensor_spec.maximum - action_tensor_spec.minimum + 1
 
 global_returns = {}
 optimizers = [
-    # tf.keras.optimizers.Adam(learning_rate=learning_rate),
+    tf.keras.optimizers.Adam(learning_rate=learning_rate),
     tf.keras.optimizers.SGD(learning_rate=learning_rate*10)
 ]
-algos = [DDQN]#, DDQN]
+algos = [DQN, DDQN]
 
-with open('results.txt', 'a') as f:
+with open('results_final.txt', 'a') as f:
     for ALGO in algos:
         local_returns = {}
         f.write(f'========= {ALGO} =========\n')
+        print(f'========= {ALGO} =========')
         for optimizer in optimizers:
             algo = ALGO(fc_layer_params, num_actions, optimizer)
             algo_name = algo.name()
             name = optimizer._name
             f.write(f'-------- {name} --------\n')
+            print(f'-------- {name} --------')
             buffer = ReplayBuffer(replay_buffer_max_length)
             buffer.fill_buffer(env, algo, initial_collect_steps)
             returns = train(env, 
@@ -63,20 +65,23 @@ with open('results.txt', 'a') as f:
                             num_eval_episodes=num_eval_episodes, 
                             eval_interval=eval_interval)
             f.write(','.join(list(map(str, returns))))
+            print(','.join(list(map(str, returns))))
             f.write('\n')
             local_returns[name] = returns
+            del algo
+            del buffer
         global_returns[algo_name] = local_returns
 
 plot_return(num_iterations, eval_interval, global_returns['DDQN'], ['SGD'], 'ddqn_sgd_2.png')
 
-# plot_return(num_iterations, eval_interval, global_returns['DQN'], ['Adam'], '1a.png')
-# plot_return(num_iterations, eval_interval, global_returns['DQN'], global_returns['DQN'].keys(), '1b.png')
-# plot_return(num_iterations, eval_interval, {
-#                 'DQN': global_returns['DQN']['Adam'],
-#                 'DDQN': global_returns['DDQN']['Adam']
-#             }, 
-#             ['DQN', 'DDQN'], '2a.png')
-# plot_return(num_iterations, eval_interval, global_returns['DDQN'], global_returns['DDQN'].keys(), '2b.png')
+plot_return(num_iterations, eval_interval, global_returns['DQN'], ['Adam'], '1a.png')
+plot_return(num_iterations, eval_interval, global_returns['DQN'], global_returns['DQN'].keys(), '1b.png')
+plot_return(num_iterations, eval_interval, {
+                'DQN': global_returns['DQN']['Adam'],
+                'DDQN': global_returns['DDQN']['Adam']
+            }, 
+            ['DQN', 'DDQN'], '2a.png')
+plot_return(num_iterations, eval_interval, global_returns['DDQN'], global_returns['DDQN'].keys(), '2b.png')
 
 # create_policy_eval_video(env, algo, 'trained-agent', random=False)
 # create_policy_eval_video(env, algo, 'random-agent', random=True)

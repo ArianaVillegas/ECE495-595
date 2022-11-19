@@ -8,6 +8,7 @@ def plot_return(num_iterations, eval_interval, global_returns, labels, filename)
     iterations = range(0, num_iterations + 1, eval_interval)
 
     print(global_returns)
+    plt.clf()
 
     for label in labels:
         plt.plot(iterations, global_returns[label], label=label)
