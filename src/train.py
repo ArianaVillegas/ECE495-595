@@ -1,5 +1,3 @@
-from replay_buffer import ReplayBuffer
-from dqn import DQN
 
 def compute_avg_return(env, algo, num_episodes=10):
   total_return = 0.0
@@ -9,7 +7,7 @@ def compute_avg_return(env, algo, num_episodes=10):
     episode_return = 0.0
 
     while not time_step.is_last():
-        action = algo.get_action([state])
+        action = algo.get_action([state], deterministic=True)
         time_step = env.step(action)
         state = time_step.observation
         reward = time_step.reward
@@ -35,12 +33,11 @@ def train(env, algo, buffer, **kwargs):
         train_loss = algo.train(experience_batch)
 
         if step % kwargs['log_interval'] == 0:
-            algo.update_target_net()
             print('step = {0}: loss = {1}'.format(step, train_loss))
 
         if step % kwargs['eval_interval'] == 0:
-            avg_return = compute_avg_return(env, algo, kwargs['num_eval_episodes'])
-            print('step = {0}: Average Return = {1}'.format(step, avg_return))
-            returns.append(avg_return)
+          avg_return = compute_avg_return(env, algo, kwargs['num_eval_episodes'])
+          print('step = {0}: Average Return = {1}'.format(step, avg_return))
+          returns.append(avg_return)
 
     return returns

@@ -5,7 +5,7 @@ from tf_agents.utils import common
 
 
 class DQN:
-    def __init__(self, fc_layer_params, num_actions, optimizer, eps=0.05) -> None:
+    def __init__(self, fc_layer_params, num_actions, optimizer, eps=0.1) -> None:
         self.fc_layer_params = fc_layer_params
         self.num_actions = num_actions
         self.optimizer = optimizer
@@ -35,7 +35,7 @@ class DQN:
                       loss='mse')
         return q_net
 
-    def update_target_net(self) -> None:
+    def _update_target_net(self) -> None:
         self.target_net.set_weights(self.q_net.get_weights())
 
     def random_action(self) -> int:
@@ -48,12 +48,14 @@ class DQN:
         opt_action = np.argmax(cur_actions[0], axis=0)
         return opt_action
 
-    def get_action(self, state, random=False) -> int:
+    def get_action(self, state, random=False, deterministic=False) -> int:
+        if deterministic:
+            return self._get_action(state)
         if random or np.random.random() < self.eps:
             return self.random_action()
         return self._get_action(state)
 
-    def train(self, experience_batch, gamma=0.9) -> float:
+    def train(self, experience_batch, gamma=1.0) -> float:
         states, actions, next_states, rewards, dones = experience_batch
         target_qval = self.q_net(states).numpy()
         next_target_qval = self.target_net(next_states).numpy()
@@ -62,20 +64,22 @@ class DQN:
             if not dones[i]:
                 reward += gamma * max_next_qval[i]
             target_qval[i][actions[i]] = reward
+        self._update_target_net()
         summary = self.q_net.fit(states, target_qval, verbose=0)
         train_loss = summary.history['loss'][0]
         return train_loss
 
-    def name(self) -> str:
+    @staticmethod
+    def name() -> str:
         return 'DQN'
 
 
 
 class DDQN(DQN):
-    def __init__(self, fc_layer_params, num_actions, optimizer, eps=0.05) -> None:
+    def __init__(self, fc_layer_params, num_actions, optimizer, eps=0.1) -> None:
         super().__init__(fc_layer_params, num_actions, optimizer, eps)
 
-    def train(self, experience_batch, gamma=0.9) -> float:
+    def train(self, experience_batch, gamma=1.0) -> float:
         states, actions, next_states, rewards, dones = experience_batch
         target_qval = self.q_net(states).numpy()
         next_qval = self.q_net(next_states).numpy()
@@ -85,10 +89,12 @@ class DDQN(DQN):
             if not dones[i]:
                 reward += gamma * next_target_qval[i][argmax_next_qval[i]]
             target_qval[i][actions[i]] = reward
+        self._update_target_net()
         summary = self.q_net.fit(states, target_qval, verbose=0)
         train_loss = summary.history['loss'][0]
         return train_loss
 
-    def name(self) -> str:
+    @staticmethod
+    def name() -> str:
         return 'DDQN'
     

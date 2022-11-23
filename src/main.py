@@ -15,7 +15,7 @@ display = pyvirtualdisplay.Display(visible=1, size=(1400, 900)).start()
 
 tf.version.VERSION
 
-num_iterations = 10000 # @param {type:"integer"}
+num_iterations = 15000 # @param {type:"integer"}
 
 initial_collect_steps = 100  # @param {type:"integer"}
 collect_steps_per_iteration =   1 # @param {type:"integer"}
@@ -37,42 +37,60 @@ action_tensor_spec = tensor_spec.from_spec(env.action_spec())
 num_actions = action_tensor_spec.maximum - action_tensor_spec.minimum + 1
 
 global_returns = {}
-optimizers = [
-    tf.keras.optimizers.Adam(learning_rate=learning_rate),
-    tf.keras.optimizers.SGD(learning_rate=learning_rate*10)
-]
-algos = [DQN, DDQN]
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    learning_rate*10,
+    decay_steps=num_iterations,
+    decay_rate=0.96,
+    staircase=True)
+optimizers = {
+    'DQN': [tf.keras.optimizers.SGD(learning_rate*5), # (learning_rate=learning_rate*10)
+    tf.keras.optimizers.Adam(learning_rate)], # (learning_rate=learning_rate),
+    'DDQN': [tf.keras.optimizers.SGD(learning_rate*10), 
+    tf.keras.optimizers.Adam(learning_rate)]
+}
+algos = [DDQN]#, DDQN]
 
-with open('results_final.txt', 'a') as f:
-    for ALGO in algos:
-        local_returns = {}
-        f.write(f'========= {ALGO} =========\n')
-        print(f'========= {ALGO} =========')
-        for optimizer in optimizers:
-            algo = ALGO(fc_layer_params, num_actions, optimizer)
-            algo_name = algo.name()
-            name = optimizer._name
-            f.write(f'-------- {name} --------\n')
-            print(f'-------- {name} --------')
-            buffer = ReplayBuffer(replay_buffer_max_length)
-            buffer.fill_buffer(env, algo, initial_collect_steps)
-            returns = train(env, 
-                            algo, 
-                            buffer, 
-                            num_iterations=num_iterations, 
-                            batch_size=batch_size, 
-                            log_interval=log_interval, 
-                            num_eval_episodes=num_eval_episodes, 
-                            eval_interval=eval_interval)
-            f.write(','.join(list(map(str, returns))))
-            print(','.join(list(map(str, returns))))
-            f.write('\n')
-            local_returns[name] = returns
-            del algo
-            del buffer
-        global_returns[algo_name] = local_returns
+# with open('final.txt', 'a') as f:
+#     for ALGO in algos:
+#         local_returns = {}
+#         f.write(f'========= {ALGO.name()} =========\n')
+#         print(f'========= {ALGO.name()} =========')
+#         for optimizer in optimizers[ALGO.name()]:
+#             algo = ALGO(fc_layer_params, num_actions, optimizer)
+#             algo_name = algo.name()
+#             name = optimizer._name
+#             f.write(f'-------- {name} --------\n')
+#             print(f'-------- {name} --------')
+#             buffer = ReplayBuffer(replay_buffer_max_length)
+#             buffer.fill_buffer(env, algo, initial_collect_steps)
+#             returns = train(env, 
+#                             algo, 
+#                             buffer, 
+#                             num_iterations=num_iterations, 
+#                             batch_size=batch_size, 
+#                             log_interval=log_interval, 
+#                             num_eval_episodes=num_eval_episodes, 
+#                             eval_interval=eval_interval)
+#             f.write(','.join(list(map(str, returns))))
+#             print(','.join(list(map(str, returns))))
+#             f.write('\n')
+#             local_returns[name] = returns
+#             del algo
+#             del buffer
+#         global_returns[algo_name] = local_returns
 
-plot_return(num_iterations, eval_interval, global_returns['DDQN'], ['SGD'], 'ddqn_sgd_2.png')
+# plot_return(num_iterations, eval_interval, global_returns['DDQN'], ['SGD'], 'ddqn_sgd_2.png')
+
+global_returns = {
+    'DQN': {
+        'Adam': [10.2,9.6,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0],
+        'SGD': [13.7,9.2,92.3,197.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,181.3,200.0,200.0,200.0]
+    },
+    'DDQN': {
+        'Adam': [9.5,9.4,128.5,200.0,185.9,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0],
+        'SGD': [9.5,9.4,116.6,193.5,193.3,197.2,193.5,192.9,200.0,187.3,200.0,195.3,198.3,139.2,169.9,198.1]
+    }
+}
 
 plot_return(num_iterations, eval_interval, global_returns['DQN'], ['Adam'], '1a.png')
 plot_return(num_iterations, eval_interval, global_returns['DQN'], global_returns['DQN'].keys(), '1b.png')

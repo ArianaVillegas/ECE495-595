@@ -11,9 +11,10 @@ def plot_return(num_iterations, eval_interval, global_returns, labels, filename)
     plt.clf()
 
     for label in labels:
-        plt.plot(iterations, global_returns[label], label=label)
+        plt.plot(iterations, global_returns[label], label=label) 
 
     plt.legend()
+    plt.grid()
     plt.ylabel('Average Return')
     plt.xlabel('Iterations')
     plt.ylim(top=250)
